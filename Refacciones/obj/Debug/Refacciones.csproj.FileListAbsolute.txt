@@ -1,0 +1,15 @@
+C:\Dev\Refacciones\Refacciones\obj\Debug\Refacciones.csproj.AssemblyReference.cache
+C:\Dev\Refacciones\Refacciones\obj\Debug\Refacciones.csproj.SuggestedBindingRedirects.cache
+C:\Dev\Refacciones\Refacciones\obj\Debug\Refacciones.MainForm.resources
+C:\Dev\Refacciones\Refacciones\obj\Debug\Refacciones.Properties.Resources.resources
+C:\Dev\Refacciones\Refacciones\obj\Debug\Refacciones.csproj.GenerateResource.cache
+C:\Dev\Refacciones\Refacciones\obj\Debug\Refacciones.csproj.CoreCompileInputs.cache
+C:\Dev\Refacciones\Refacciones\obj\Debug\Refacciones.Procesos.resources
+C:\Dev\Refacciones\Refacciones\bin\Debug\Refacciones.exe.config
+C:\Dev\Refacciones\Refacciones\bin\Debug\Refacciones.exe
+C:\Dev\Refacciones\Refacciones\bin\Debug\Refacciones.pdb
+C:\Dev\Refacciones\Refacciones\obj\Debug\Refacciones.exe
+C:\Dev\Refacciones\Refacciones\obj\Debug\Refacciones.pdb
+C:\Dev\Refacciones\Refacciones\obj\Debug\Refacciones.Equipos.resources
+C:\Dev\Refacciones\Refacciones\obj\Debug\Refacciones.UserEntryForm.resources
+C:\Dev\Refacciones\Refacciones\obj\Debug\Refacciones.SeccionesySubsistemas.resources
