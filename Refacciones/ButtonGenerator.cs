@@ -38,15 +38,16 @@ namespace Refacciones
             }
 
             // Recalculate the size and position of each button
-            var buttonWidth = 100; // width
-            var buttonHeight = 50; // height
+            var buttonWidth = 100;
+            var buttonHeight = 50;
             var horizontalSpacing = 10; // horizontal spacing between buttons
             var verticalSpacing = 20; // vertical spacing between buttons
-            var labelButtonSpacing = 50; // spacing between label and buttons
+            var labelButtonSpacing = 40; // spacing between label and buttons
 
             panel.Resize += (sender, e) =>
             {
-                if(panel.Width <300)
+              
+                if (panel.Width < 300)
                 {
                     panel.Width = 400;
                 }
@@ -67,14 +68,8 @@ namespace Refacciones
       
         public static void UpdatePanelSizeAndPosition(Panel panel, Size clientSize)
         {
-            const double panelWidthPercentage = 0.5;
-            const double panelHeightPercentage = 0.9;
-            const int horizontalMargin = 10;
-            const int verticalMargin = 10;
-
-            panel.Size = new Size((int)(clientSize.Width * panelWidthPercentage), (int)(clientSize.Height * panelHeightPercentage));
-            panel.Location = new Point((clientSize.Width - panel.Width) / 2, (clientSize.Height - panel.Height) / 2);
-            panel.Padding = new Padding(horizontalMargin, verticalMargin, horizontalMargin, verticalMargin);
+            panel.Dock = DockStyle.Top;
+            panel.Dock = DockStyle.Fill;
         }
     }
 
