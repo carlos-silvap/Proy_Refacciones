@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -18,62 +19,63 @@ namespace Refacciones
 
         private void Procesos_Load(object sender, EventArgs e)
         {
+            //Panels
+            var topPanel = new Panel();
             var buttonsPanel = new Panel();
-            Controls.Add(buttonsPanel);
-
-            // Create a PANEL at the bottom
             var bottomPanel = new Panel();
+
+            //Buttons
+            var addButton = new Button();
+
+            //Panel properties
+            topPanel.Dock = DockStyle.Top;
+            topPanel.Height = 30;
+
+            buttonsPanel.Dock = DockStyle.Fill;
 
             bottomPanel.BackColor = Color.LightGray;
             bottomPanel.Dock = DockStyle.Bottom;
             bottomPanel.Height = 50;
-            buttonsPanel.Controls.Add(bottomPanel);
 
-            // Create button to add items to sql database
-            var smallButton = new Button();
-            smallButton.Text = "Agregar Proceso";
-            smallButton.Size = new Size(120, 30);
-            smallButton.Anchor = AnchorStyles.None;
-            smallButton.Location = new Point((bottomPanel.Width - smallButton.Width) / 2,
-                                     (bottomPanel.Height - smallButton.Height) / 2);
+            Controls.Add(topPanel);
+            Controls.Add(buttonsPanel);
+            Controls.Add(bottomPanel);
 
-            // Add the button to the Controls collection of the panel
-            bottomPanel.Controls.Add(smallButton);
+            //Buttons properties
+            addButton.Text = "Agregar Proceso";
+            addButton.Size = new Size(120, 30);
+            addButton.Anchor = AnchorStyles.None;
+            addButton.Location = new Point((bottomPanel.Width - addButton.Width) / 2,
+                                     (bottomPanel.Height - addButton.Height) / 2);
+            bottomPanel.Controls.Add(addButton);
 
-            var query = "SELECT * FROM dbo.Procesos";
-            var command = new SqlCommand(query, cnx);
-
-            // Read data from the database
-            var reader = command.ExecuteReader();
-
-            var label = ButtonGenerator.GenerateButtons(cnx, buttonsPanel, reader, (proceso, idProceso) =>
+            //Filter the elements in the sql table
+            var command = new SqlCommand
             {
-                mainForm.Equipos(cnx, proceso, idProceso);
-            });
-            //path = label.Text + " - ";
-
-            // Add a scrollbar to the buttonsPanel
-            var scrollBar = new VScrollBar();
-            scrollBar.Dock = DockStyle.Right;
-            buttonsPanel.Controls.Add(scrollBar);
-
-            // Set the initial size and position of the buttonsPanel
-            ButtonGenerator.UpdatePanelSizeAndPosition(buttonsPanel, ClientSize);
-
-            Resize += delegate
-            {
-                // Recalculate the size and position of the buttonsPanel
-                ButtonGenerator.UpdatePanelSizeAndPosition(buttonsPanel, ClientSize);
+                CommandText = "SELECT * FROM dbo.Procesos",
+                Connection = cnx
             };
-
-            smallButton.Click += (senders, ex) => agregarProceso_Click(cnx, sender, e, label.Text);
-
+            var reader = command.ExecuteReader();
+            var label = DynamicPanelBuilder.GenerateTopPanel(topPanel, reader, mainForm, cnx,(equipo, idEquipo) =>
+            {
+                mainForm.Procesos(cnx);
+            });
+            topPanel.Controls.Add(label);
+            DynamicPanelBuilder.GenerateButtons(cnx, buttonsPanel, reader, (proceso, idProceso) =>
+            {
+                mainForm.Equipos(cnx, idProceso, proceso);
+            });
+            addButton.Click += (senders, ex) => agregarProceso_Click(cnx, sender, e, label.Text);
             reader.Close();
+            //DynamicPanelBuilder.UpdatePanelSizeAndPosition(buttonsPanel, ClientSize);
+            //Resize += delegate
+            //{
+            //    DynamicPanelBuilder.UpdatePanelSizeAndPosition(buttonsPanel, ClientSize);
+            //};
         }
-
-        static void agregarProceso_Click(SqlConnection cnx, object sender, EventArgs e, string label)
+        private void agregarProceso_Click(SqlConnection cnx, object sender, EventArgs e, string label)
         {
-            UserEntryForm agregarForm = new UserEntryForm(cnx, label, 0, 0);
+            UserEntryForm agregarForm = new UserEntryForm(cnx, label, 0, 0, mainForm);
             agregarForm.Show();
         }
     }

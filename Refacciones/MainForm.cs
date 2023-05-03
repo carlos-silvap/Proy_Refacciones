@@ -44,7 +44,7 @@ namespace Refacciones
             Controls.Add(procesosControl);
             currentControl = procesosControl;
         }
-        public void Equipos(SqlConnection cnx, string proceso, int idProceso)
+        public void Equipos(SqlConnection cnx, int idProceso, string proceso)
         {
             // Remove the current content from the panel
             if (currentControl != null)
@@ -53,12 +53,12 @@ namespace Refacciones
                 currentControl.Dispose();
             }
             // Add the new content to the panel
-            var equiposControl = new Equipos(this, cnx, proceso, idProceso);
+            var equiposControl = new Equipos(this, cnx, idProceso, proceso);
             equiposControl.Dock = DockStyle.Fill;
             Controls.Add(equiposControl);
             currentControl = equiposControl;
         }
-        public void SeccionesSubsistemas(SqlConnection cnx, string proceso, int idProceso, int idEquipo)
+        public void SeccionesSubsistemas(SqlConnection cnx, string proceso, string equipo, int idProceso, int idEquipo)
         {
             // Remove the current content from the panel
             if (currentControl != null)
@@ -67,10 +67,11 @@ namespace Refacciones
                 currentControl.Dispose();
             }
             // Add the new content to the panel
-            var equiposControl = new SeccionesySubsistemas(this, cnx, proceso, idProceso, idEquipo);
+            var equiposControl = new SeccionesySubsistemas(this, cnx, proceso, equipo, idProceso, idEquipo);
             equiposControl.Dock = DockStyle.Fill;
             Controls.Add(equiposControl);
             currentControl = equiposControl;
         }
+
     }
 }

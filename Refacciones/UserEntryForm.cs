@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
-using System.Drawing;
 using System.Windows.Forms;
 
 namespace Refacciones
@@ -10,16 +9,18 @@ namespace Refacciones
     {
         private SqlConnection cnx;
         string label;
+        MainForm mainForm;
         private int idProceso, idEquipo, idSeccion, idSubsistema;
         Panel leftPanel = new Panel();
         Panel rightPanel = new Panel();
-        public UserEntryForm(SqlConnection cnx, string label, int idProceso, int idEquipo)
+        public UserEntryForm(SqlConnection cnx, string label, int idProceso, int idEquipo, MainForm mainForm)
         {
             InitializeComponent();
             this.cnx = cnx;
             this.label = label;
             this.idProceso = idProceso;
             this.idEquipo = idEquipo;
+            this.mainForm = mainForm;
         }
         private void UserEntryForm_Load(object sender, EventArgs e)
         {
@@ -41,7 +42,6 @@ namespace Refacciones
             // Subscribe to the Resize event of the form
             this.Resize += new EventHandler(UserEntryForm_Resize);
         }
-
         private void UserEntryForm_Resize(object sender, EventArgs e)
         {
             rightPanel.Width = this.Width / 2;
@@ -52,11 +52,29 @@ namespace Refacciones
             var dataGridView = new DataGridView();
             dataGridView.Dock = DockStyle.Fill;
             rightPanel.Controls.Add(dataGridView);
-            SqlDataAdapter adapter = new SqlDataAdapter("SELECT * FROM " + label, cnx);
+
+            string query = "SELECT * FROM " + label;
+
+            // Modify the query to filter results based on idProceso and/or idElemento
+            if (idProceso != 0 && idSeccion == 0 && idSubsistema == 0)
+            {
+                query += " WHERE idProceso = " + idProceso;
+            }
+            else if (idProceso != 0 && idSeccion != 0 && idSubsistema == 0)
+            {
+                query += " WHERE idProceso = " + idProceso + " AND idSeccion = " + idSeccion;
+            }
+            else if (idProceso != 0 && idSeccion != 0 && idSubsistema != 0)
+            {
+                query += " WHERE idProceso = " + idProceso + " AND idSeccion = " + idSeccion + " AND idSubsistema = " + idSubsistema;
+            }
+
+            SqlDataAdapter adapter = new SqlDataAdapter(query, cnx);
             DataTable dataTable = new DataTable();
             adapter.Fill(dataTable);
             dataGridView.DataSource = dataTable;
         }
+
         private void LeftPanelLoad()
         {
             SqlCommand cmd = new SqlCommand("SELECT * FROM " + label, cnx);
@@ -104,7 +122,7 @@ namespace Refacciones
             buttonBrowse.Click += new EventHandler(buttonBrowse_Click);
             leftPanel.Controls.Add(buttonBrowse);
         }
-            void buttonBrowse_Click(object sendesr, EventArgs es)
+        private void buttonBrowse_Click(object sendesr, EventArgs es)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "Image Files(*.bmp;*.jpg;*.png)|*.bmp;*.jpg;*.png";
@@ -112,7 +130,7 @@ namespace Refacciones
             {
                 // Get the path of the selected file and set it to the textbox corresponding to the "foto" column
                 string fileName = openFileDialog.FileName;
-                TextBox textBoxFoto = (TextBox)this.Controls["foto"];
+                TextBox textBoxFoto = (TextBox)leftPanel.Controls["foto"];
                 textBoxFoto.Text = fileName;
             }
         }
@@ -155,7 +173,7 @@ namespace Refacciones
                 }
                 int newIdEquipo = maxIdEquipo + 1;
 
-                foreach (Control control in this.Controls)
+                foreach (Control control in leftPanel.Controls)
                 {
                     if (control is TextBox)
                     {
@@ -168,11 +186,11 @@ namespace Refacciones
 
                 sql = sql.TrimEnd(',') + ") VALUES (";
 
-                foreach (Control control in this.Controls)
+                foreach (Control control in leftPanel.Controls)
                 {
                     if (control is TextBox)
                     {
-                        sql += "'" + control.Text + "',";
+                        sql += "'" + control.Text.ToUpper() + "',";
                     }
                 }
 
@@ -198,7 +216,7 @@ namespace Refacciones
                 // Increment the latest idSecciones for the given idProceso and idEquipo
                 int newId = latestId + 1;
 
-                foreach (Control control in this.Controls)
+                foreach (Control control in leftPanel.Controls)
                 {
                     if (control is TextBox)
                     {
@@ -211,11 +229,11 @@ namespace Refacciones
 
                 sql = sql.TrimEnd(',') + ") VALUES (";
 
-                foreach (Control control in this.Controls)
+                foreach (Control control in leftPanel.Controls)
                 {
                     if (control is TextBox)
                     {
-                        sql += "'" + control.Text + "',";
+                        sql += "'" + control.Text.ToUpper() + "',";
                     }
                 }
 
@@ -241,7 +259,7 @@ namespace Refacciones
                 // Increment the latest idSubsistemas for the given idProceso and idEquipo
                 int newId = latestId + 1;
 
-                foreach (Control control in this.Controls)
+                foreach (Control control in leftPanel.Controls)
                 {
                     if (control is TextBox)
                     {
@@ -254,11 +272,11 @@ namespace Refacciones
 
                 sql = sql.TrimEnd(',') + ") VALUES (";
 
-                foreach (Control control in this.Controls)
+                foreach (Control control in leftPanel.Controls)
                 {
                     if (control is TextBox)
                     {
-                        sql += "'" + control.Text + "',";
+                        sql += "'" + control.Text.ToUpper() + "',";
                     }
                 }
 
@@ -271,8 +289,19 @@ namespace Refacciones
             // Execute the INSERT statement
             SqlCommand cmd = new SqlCommand(sql, cnx);
             cmd.ExecuteNonQuery();
+            DialogResult resultt = MessageBox.Show("Data inserted successfully.", "Success", MessageBoxButtons.OK);
+            if (resultt == DialogResult.OK)
+            {
+                if (label == "Procesos")
+                    mainForm.Procesos(cnx);
+                else if(label == "Equipos")
+                    mainForm.Equipos(cnx, idProceso, "");
+                else if(label == "Secciones" || label=="Subsistemas")
+                    mainForm.SeccionesSubsistemas(cnx,"","",idProceso, idEquipo);
 
-            MessageBox.Show("Data inserted successfully.");
+                this.Close();
+            }
+            
         }
 
     }

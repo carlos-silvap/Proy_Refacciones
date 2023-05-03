@@ -28,18 +28,19 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.SuspendLayout();
-            // 
             // Equipos
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Name = "Equipos";
+            this.Size = new System.Drawing.Size(593, 381);
             this.Load += new System.EventHandler(this.Equipos_Load);
             this.ResumeLayout(false);
 
         }
 
         #endregion
+
+        
     }
 }
