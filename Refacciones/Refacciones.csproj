@@ -46,7 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ButtonGenerator.cs" />
+    <Compile Include="DynamicPanelBuilder.cs" />
     <Compile Include="Equipos.cs">
       <SubType>UserControl</SubType>
     </Compile>
