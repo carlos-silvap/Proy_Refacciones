@@ -136,6 +136,24 @@ namespace Refacciones
         }
         private void buttonInsert_Click(object sender, EventArgs e)
         {
+            // Get the TextBox controls from the left panel
+            List<TextBox> textBoxes = leftPanel.Controls.OfType<TextBox>().ToList();
+
+            // Check if the name of the item being added is already in the filtered elements of the table
+            string itemName = textBoxes.First(tb => tb.Name == label).Text;
+            DataGridView dataGridView = (DataGridView)rightPanel.Controls[0];
+            foreach (DataGridViewRow row in dataGridView.Rows)
+            {
+                if (row.Cells[label].Value != null)
+                {
+                    string name = row.Cells[label].Value.ToString();
+                    if (name.Equals(itemName, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        MessageBox.Show("Nombre de elemento duplicado");
+                        return;
+                    }
+                }
+            }
             string sql = "INSERT INTO " + label + "(";
             if (label == "Procesos")
             {
