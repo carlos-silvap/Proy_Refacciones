@@ -2,6 +2,11 @@
 using System.Data;
 using System.Data.SqlClient;
 using System.Windows.Forms;
+using System.Linq;
+using System.Collections.Generic;
+using System.IO;
+using System.Drawing;
+
 
 namespace Refacciones
 {
@@ -13,6 +18,7 @@ namespace Refacciones
         private int idProceso, idEquipo, idSeccion, idSubsistema;
         Panel leftPanel = new Panel();
         Panel rightPanel = new Panel();
+        string fileName;
         public UserEntryForm(SqlConnection cnx, string label, int idProceso, int idEquipo, MainForm mainForm)
         {
             InitializeComponent();
@@ -129,18 +135,16 @@ namespace Refacciones
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 // Get the path of the selected file and set it to the textbox corresponding to the "foto" column
-                string fileName = openFileDialog.FileName;
+                fileName = openFileDialog.FileName;
                 TextBox textBoxFoto = (TextBox)leftPanel.Controls["foto"];
                 textBoxFoto.Text = fileName;
             }
         }
-        private void buttonInsert_Click(object sender, EventArgs e)
+        private bool IsItemNameDuplicate()
         {
-            // Get the TextBox controls from the left panel
             List<TextBox> textBoxes = leftPanel.Controls.OfType<TextBox>().ToList();
-
-            // Check if the name of the item being added is already in the filtered elements of the table
             string itemName = textBoxes.First(tb => tb.Name == label).Text;
+
             DataGridView dataGridView = (DataGridView)rightPanel.Controls[0];
             foreach (DataGridViewRow row in dataGridView.Rows)
             {
@@ -149,178 +153,122 @@ namespace Refacciones
                     string name = row.Cells[label].Value.ToString();
                     if (name.Equals(itemName, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        MessageBox.Show("Nombre de elemento duplicado");
-                        return;
+                        return true;
                     }
                 }
             }
-            string sql = "INSERT INTO " + label + "(";
+            return false;
+        }
+        private void buttonInsert_Click(object sender, EventArgs e)
+        {
+            byte[] imageData = File.ReadAllBytes(fileName);
+            string query = BuildInsertQuery();
+            // Check if the name of the item being added is already in the filtered elements of the table
+            if (IsItemNameDuplicate())
+            {
+                MessageBox.Show("Nombre de elemento duplicado");
+                return;
+            }
+            ExecuteInsertQuery(query, imageData);
+            MessageBox.Show("Data inserted successfully.", "Success", MessageBoxButtons.OK);
+            UpdateDataGridView();
+            UpdateMainForm();
+        }
+        private string BuildInsertQuery()
+        {
+            var columns = "";
+            var values = "";
+            var textBoxes = leftPanel.Controls.OfType<TextBox>()
+                .Where(t => t.Name != "foto");
             if (label == "Procesos")
             {
-                // Procesos
-                foreach (Control control in leftPanel.Controls)
-                {
-                    if (control is TextBox)
-                    {
-                        sql += control.Name + ",";
-                    }
-                }
-
-                sql = sql.TrimEnd(',') + ") VALUES (";
-
-                foreach (Control control in leftPanel.Controls)
-                {
-                    if (control is TextBox)
-                    {
-                        sql += "'" + control.Text.ToUpper() + "',";
-                    }
-                }
-
-                sql = sql.TrimEnd(',') + "); ";
+                columns = string.Join(",", textBoxes.Select(t => t.Name));
+                values = string.Join(",", textBoxes.Select(t => $"'{t.Text.ToUpper()}'"));
             }
-            else if (label == "Equipos")
+            else if(label == "Equipos")
             {
-                // Generate a new idEquipo that increments within the same idProceso
-                string getMaxIdEquipoSql = "SELECT MAX(idEquipo) FROM Equipos WHERE idProceso = " + idProceso;
-                SqlCommand getMaxIdEquipoCmd = new SqlCommand(getMaxIdEquipoSql, cnx);
-                int maxIdEquipo = 0;
+                string getMaxIdEquipo = "SELECT MAX(idEquipo) FROM Equipos WHERE idProceso = " + idProceso;
+                SqlCommand getMaxIdEquipoCmd = new SqlCommand(getMaxIdEquipo, cnx);
+                int maxId = 0;
                 object result = getMaxIdEquipoCmd.ExecuteScalar();
                 if (result != DBNull.Value && result != null)
                 {
-                    maxIdEquipo = Convert.ToInt32(result);
+                    maxId = Convert.ToInt32(result);
                 }
-                int newIdEquipo = maxIdEquipo + 1;
+                int newIdEquipo = maxId + 1; 
+                columns = string.Join(",", textBoxes.Select(t => t.Name)) + ",idProceso, idEquipo";
+                values = string.Join(",", textBoxes.Select(t => $"'{t.Text.ToUpper()}'")) + $",'{idProceso}','{newIdEquipo}'";
 
-                foreach (Control control in leftPanel.Controls)
-                {
-                    if (control is TextBox)
-                    {
-                        sql += control.Name + ",";
-                    }
-                }
-
-                // Add the idProceso and new idEquipo columns to the INSERT statement
-                sql += "idProceso, idEquipo,";
-
-                sql = sql.TrimEnd(',') + ") VALUES (";
-
-                foreach (Control control in leftPanel.Controls)
-                {
-                    if (control is TextBox)
-                    {
-                        sql += "'" + control.Text.ToUpper() + "',";
-                    }
-                }
-
-                // Add the idProceso and new idEquipo values to the VALUES clause
-                sql += "'" + idProceso + "','" + newIdEquipo + "',";
-
-                sql = sql.TrimEnd(',') + "); ";
             }
             else if (label == "Secciones")
             {
-                // Get the latest idSecciones for the given idProceso and idEquipo
-                string sqlMaxId = "SELECT MAX(idSecciones) FROM Secciones WHERE idProceso = '" + idProceso + "' AND idEquipo = '" + idEquipo + "'";
-                int latestId = 0;
-                using (SqlCommand command = new SqlCommand(sqlMaxId, cnx))
+                string MaxIdSeccion = "SELECT MAX(idSecciones) FROM Secciones WHERE idProceso = '" + idProceso + "' AND idEquipo = '" + idEquipo + "'";
+                SqlCommand getMaxIdSeccionCmd = new SqlCommand(MaxIdSeccion, cnx);
+                int maxId = 0;
+                object result = getMaxIdSeccionCmd.ExecuteScalar();
+                if (result != DBNull.Value && result != null)
                 {
-                    object result = command.ExecuteScalar();
-                    if (result != DBNull.Value)
-                    {
-                        latestId = Convert.ToInt32(result);
-                    }
+                    maxId = Convert.ToInt32(result);
                 }
-
-                // Increment the latest idSecciones for the given idProceso and idEquipo
-                int newId = latestId + 1;
-
-                foreach (Control control in leftPanel.Controls)
-                {
-                    if (control is TextBox)
-                    {
-                        sql += control.Name + ",";
-                    }
-                }
-
-                // Add the idProceso, idEquipo, and idSecciones columns to the INSERT statement
-                sql += "idProceso,idEquipo,idSecciones,";
-
-                sql = sql.TrimEnd(',') + ") VALUES (";
-
-                foreach (Control control in leftPanel.Controls)
-                {
-                    if (control is TextBox)
-                    {
-                        sql += "'" + control.Text.ToUpper() + "',";
-                    }
-                }
-
-                // Add the idProceso, idEquipo, and new idSecciones values to the VALUES clause
-                sql += "'" + idProceso + "','" + idEquipo + "','" + newId + "',";
-
-                sql = sql.TrimEnd(',') + "); ";
+                int newIdSeccion = maxId + 1;
+                columns = string.Join(",", textBoxes.Select(t => t.Name)) + ",idProceso, idEquipo,idSecciones";
+                values = string.Join(",", textBoxes.Select(t => $"'{t.Text.ToUpper()}'")) + $",'{idProceso}','{idEquipo}','{newIdSeccion}'";
             }
             else if (label == "Subsistemas")
             {
-                // Get the latest idSubsistemas for the given idProceso and idEquipo
-                string sqlMaxId = "SELECT MAX(idSubsistemas) FROM Subsistemas WHERE idProceso = '" + idProceso + "' AND idEquipo = '" + idEquipo + "'";
-                int latestId = 0;
-                using (SqlCommand command = new SqlCommand(sqlMaxId, cnx))
+                string MaxIdSubsistema = "SELECT MAX(idSubsistemas) FROM Subsistemas WHERE idProceso = '" + idProceso + "' AND idEquipo = '" + idEquipo + "'";
+                SqlCommand getMaxIdSubsistemaCmd = new SqlCommand(MaxIdSubsistema, cnx);
+                int maxId = 0;
+                object result = getMaxIdSubsistemaCmd.ExecuteScalar();
+                if (result != DBNull.Value && result != null)
                 {
-                    object result = command.ExecuteScalar();
-                    if (result != DBNull.Value)
-                    {
-                        latestId = Convert.ToInt32(result);
-                    }
+                    maxId = Convert.ToInt32(result);
                 }
-
-                // Increment the latest idSubsistemas for the given idProceso and idEquipo
-                int newId = latestId + 1;
-
-                foreach (Control control in leftPanel.Controls)
-                {
-                    if (control is TextBox)
-                    {
-                        sql += control.Name + ",";
-                    }
-                }
-
-                // Add the idProceso, idEquipo, and idSubsistemas columns to the INSERT statement
-                sql += "idProceso,idEquipo,idSubsistemas,";
-
-                sql = sql.TrimEnd(',') + ") VALUES (";
-
-                foreach (Control control in leftPanel.Controls)
-                {
-                    if (control is TextBox)
-                    {
-                        sql += "'" + control.Text.ToUpper() + "',";
-                    }
-                }
-
-                // Add the idProceso, idEquipo, and new idSubsistemas values to the VALUES clause
-                sql += "'" + idProceso + "','" + idEquipo + "','" + newId + "',";
-
-                sql = sql.TrimEnd(',') + "); ";
+                int newIdSubsistema = maxId + 1;
+                columns = string.Join(",", textBoxes.Select(t => t.Name)) + ",idProceso, idEquipo,idSubsistemas";
+                values = string.Join(",", textBoxes.Select(t => $"'{t.Text.ToUpper()}'")) + $",'{idProceso}','{idEquipo}','{newIdSubsistema}'";
             }
-
-            // Execute the INSERT statement
-            SqlCommand cmd = new SqlCommand(sql, cnx);
-            cmd.ExecuteNonQuery();
-            DialogResult resultt = MessageBox.Show("Data inserted successfully.", "Success", MessageBoxButtons.OK);
-            if (resultt == DialogResult.OK)
-            {
-                if (label == "Procesos")
-                    mainForm.Procesos(cnx);
-                else if(label == "Equipos")
-                    mainForm.Equipos(cnx, idProceso, "");
-                else if(label == "Secciones" || label=="Subsistemas")
-                    mainForm.SeccionesSubsistemas(cnx,"","",idProceso, idEquipo);
-
-                this.Close();
-            }
-            
+            return $"INSERT INTO {label} ({columns},foto) VALUES ({values},@foto)";
         }
+        private void ExecuteInsertQuery(string query, byte[] imageData)
+        {
+            using (SqlCommand cmd = new SqlCommand(query, cnx))
+            {
+                cmd.Parameters.Add("@foto", SqlDbType.VarBinary, imageData.Length).Value = imageData;
+                cmd.ExecuteNonQuery();
+            }
+        }
+        private void UpdateDataGridView()
+        {
+            var dataGridView = (DataGridView)rightPanel.Controls[0];
+            var dataTable = (DataTable)dataGridView.DataSource;
+            dataTable.Clear();
 
+            string query = "SELECT * FROM " + label;
+
+            if (idProceso != 0 && idSeccion == 0 && idSubsistema == 0)
+            {
+                query += " WHERE idProceso = " + idProceso;
+            }
+            else if (idProceso != 0 && idSeccion != 0 && idSubsistema == 0)
+            {
+                query += " WHERE idProceso = " + idProceso + " AND idSeccion = " + idSeccion;
+            }
+            else if (idProceso != 0 && idSeccion != 0 && idSubsistema != 0)
+            {
+                query += " WHERE idProceso = " + idProceso + " AND idSeccion = " + idSeccion + " AND idSubsistema = " + idSubsistema;
+            }
+            SqlDataAdapter adapter = new SqlDataAdapter(query, cnx);
+            adapter.Fill(dataTable);
+        }
+        private void UpdateMainForm()
+        {
+            if (label == "Procesos")
+                mainForm.Procesos(cnx);
+            else if (label == "Equipos")
+                mainForm.Equipos(cnx, idProceso, "");
+            else if (label == "Secciones" || label == "Subsistemas")
+                mainForm.SeccionesSubsistemas(cnx, "", "", idProceso, idEquipo);
+        }
     }
 }
