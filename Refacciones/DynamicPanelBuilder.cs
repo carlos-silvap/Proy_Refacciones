@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -28,11 +29,57 @@ namespace Refacciones
                 {
                     buttons.Add(btn);
                 }
-                btn.Click += (sender, e) => {
-                    tagValue = Convert.ToInt32(btn.Tag);
-                    btnClickHandler(btn.Text, tagValue);
+
+                // Check if the row has an image in the 'foto' column
+                if (!reader.IsDBNull(reader.GetOrdinal("foto")) && reader.GetSqlBinary(reader.GetOrdinal("foto")).Value.Length > 0)
+                {
+                    var imageData = (byte[])reader["foto"];
+
+                    // Create an image from the byte array
+                    using (var ms = new MemoryStream(imageData))
+                    {
+                        var image = Image.FromStream(ms);
+                        btn.BackgroundImage = image;
+                        btn.BackgroundImageLayout = ImageLayout.Zoom;
+                        btn.Padding = new Padding(0, btn.Height - (int)(btn.Width * ((double)image.Height / (double)image.Width)), 0, 0);
+                        if (!string.IsNullOrEmpty(btn.Text))
+                        {
+                            Label lbl = new Label();
+                            lbl.Text = btn.Text;
+                            lbl.Font = new Font("Arial", 10);
+                            lbl.TextAlign = ContentAlignment.MiddleCenter;
+                            lbl.Size = new Size(btn.Width, 20);
+
+                            // Set the label location to the bottom of the button
+                            lbl.Location = new Point(btn.Left, btn.Bottom - lbl.Height);
+
+                            // Set the label's anchor to anchor it to the bottom of the button
+                            lbl.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
+
+                            btn.Text = "";
+
+                            btn.Controls.Add(lbl);
+                        }
+                        else
+                        {
+                            btn.TextAlign = ContentAlignment.MiddleCenter;
+                        }
+                    }
+                }
+
+                btn.Click += (sender, e) =>
+                {
+                    var clickedButton = (Button)sender;
+                    tagValue = Convert.ToInt32(clickedButton.Tag);
+                    if (clickedButton.Controls.OfType<Label>().Any())
+                    {
+                        btnClickHandler(clickedButton.Controls.OfType<Label>().First().Text, tagValue);
+                    }
+                    else
+                    {
+                        btnClickHandler(clickedButton.Text, tagValue);
+                    }
                 };
-                btn.Click += (sender, e) => btnClickHandler(btn.Text, Convert.ToInt32(btn.Tag));
             }
 
             // Add the buttons to the panel in the correct order
@@ -42,19 +89,16 @@ namespace Refacciones
             }
 
             // Recalculate the size and position of each button
-            var buttonWidth = 100;
-            var buttonHeight = 50;
+            var buttonWidth = 150;
+            var buttonHeight = 100;
             var horizontalSpacing = 10; // horizontal spacing between buttons
             var verticalSpacing = 20; // vertical spacing between buttons
             var labelButtonSpacing = 40; // spacing between label and buttons
 
-
             // Set up autoscroll
             panel.AutoScroll = true;
             panel.AutoScrollMargin = new Size(0, 10); // margin to prevent buttons from being too close to the edge
-            
             panel.AutoScrollMinSize = new Size(0, buttons.Count * (buttonHeight + verticalSpacing) + labelButtonSpacing);
-
 
             panel.Resize += (sender, e) =>
             {
@@ -78,7 +122,6 @@ namespace Refacciones
 
             };
         }
-
         public static Label GenerateTopPanel(Panel panel, SqlDataReader reader, MainForm mainForm, SqlConnection cnx, Action<string, int> btnClickHandler)
         {
             // LABEL format
@@ -98,13 +141,11 @@ namespace Refacciones
                 backButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
                 backButton.Size = new Size(75, 23);
                 backButton.Location = new Point(panel.Width - backButton.Width - 10, 5);
-                //// Add a click event handler to the button
+                // Add a click event handler to the button
                 backButton.Click += (sender, e) =>
                 {
                     btnClickHandler(backButton.Text, tagValue);
-                    //mainForm.Procesos(cnx);
                 };
-                //backButton.Click += (sender, e) => btnClickHandler(btn.Text, Convert.ToInt32(btn.Tag));
                 panel.Controls.Add(backButton);
             }
             return label;
