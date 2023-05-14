@@ -161,7 +161,11 @@ namespace Refacciones
         }
         private void buttonInsert_Click(object sender, EventArgs e)
         {
-            byte[] imageData = File.ReadAllBytes(fileName);
+            byte[] imageData = null;
+            if (!string.IsNullOrEmpty(fileName))
+            {
+                imageData = File.ReadAllBytes(fileName);
+            }
             string query = BuildInsertQuery();
             // Check if the name of the item being added is already in the filtered elements of the table
             if (IsItemNameDuplicate())
@@ -228,13 +232,21 @@ namespace Refacciones
                 columns = string.Join(",", textBoxes.Select(t => t.Name)) + ",idProceso, idEquipo,idSubsistemas";
                 values = string.Join(",", textBoxes.Select(t => $"'{t.Text.ToUpper()}'")) + $",'{idProceso}','{idEquipo}','{newIdSubsistema}'";
             }
+            else if (label == "Herramientas_Refacciones_Instructivos_Especificaciones")
+            {
+                columns = string.Join(",", textBoxes.Select(t => t.Name));
+                values = string.Join(",", textBoxes.Select(t => $"'{t.Text.ToUpper()}'"));
+            }
             return $"INSERT INTO {label} ({columns},foto) VALUES ({values},@foto)";
         }
         private void ExecuteInsertQuery(string query, byte[] imageData)
         {
             using (SqlCommand cmd = new SqlCommand(query, cnx))
             {
-                cmd.Parameters.Add("@foto", SqlDbType.VarBinary, imageData.Length).Value = imageData;
+
+                cmd.Parameters.Add("@foto", SqlDbType.VarBinary, imageData?.Length ?? -1).Value = imageData ?? (object)DBNull.Value;
+
+
                 cmd.ExecuteNonQuery();
             }
         }
