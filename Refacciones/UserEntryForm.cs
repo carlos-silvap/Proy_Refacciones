@@ -61,18 +61,21 @@ namespace Refacciones
 
             string query = "SELECT * FROM " + label;
 
-            // Modify the query to filter results based on idProceso and/or idElemento
-            if (idProceso != 0 && idSeccion == 0 && idSubsistema == 0)
+            if (idProceso != 0 && idEquipo == 0 && (idSeccion == 0 && idSubsistema == 0))
             {
                 query += " WHERE idProceso = " + idProceso;
             }
-            else if (idProceso != 0 && idSeccion != 0 && idSubsistema == 0)
+            else if (idProceso != 0 && idEquipo != 0 && (idSeccion == 0 && idSubsistema == 0))
             {
-                query += " WHERE idProceso = " + idProceso + " AND idSeccion = " + idSeccion;
+                query += " WHERE idProceso = " + idProceso + " AND idEquipo = " + idEquipo;
             }
-            else if (idProceso != 0 && idSeccion != 0 && idSubsistema != 0)
+            else if (idProceso != 0 && idEquipo != 0 && (idSeccion != 0 && idSubsistema == 0))
             {
-                query += " WHERE idProceso = " + idProceso + " AND idSeccion = " + idSeccion + " AND idSubsistema = " + idSubsistema;
+                query += " WHERE idProceso = " + idProceso + " AND idEquipo = " + idEquipo + " AND idSeccion = " + idSeccion;
+            }
+            else if (idProceso != 0 && idEquipo != 0 && (idSeccion == 0 && idSubsistema != 0))
+            {
+                query += " WHERE idProceso = " + idProceso + " AND idEquipo = " + idEquipo + " AND idSubsistema = " + idSubsistema;
             }
 
             SqlDataAdapter adapter = new SqlDataAdapter(query, cnx);
@@ -258,17 +261,22 @@ namespace Refacciones
 
             string query = "SELECT * FROM " + label;
 
-            if (idProceso != 0 && idSeccion == 0 && idSubsistema == 0)
+
+            if (idProceso != 0 && idEquipo == 0 && (idSeccion == 0 && idSubsistema == 0))
             {
                 query += " WHERE idProceso = " + idProceso;
             }
-            else if (idProceso != 0 && idSeccion != 0 && idSubsistema == 0)
+            else if (idProceso != 0 && idEquipo != 0 && (idSeccion == 0 && idSubsistema == 0))
             {
-                query += " WHERE idProceso = " + idProceso + " AND idSeccion = " + idSeccion;
+                query += " WHERE idProceso = " + idProceso + " AND idEquipo = " + idEquipo;
             }
-            else if (idProceso != 0 && idSeccion != 0 && idSubsistema != 0)
+            else if (idProceso != 0 && idEquipo != 0 && (idSeccion != 0 && idSubsistema == 0))
             {
-                query += " WHERE idProceso = " + idProceso + " AND idSeccion = " + idSeccion + " AND idSubsistema = " + idSubsistema;
+                query += " WHERE idProceso = " + idProceso + " AND idEquipo = " + idEquipo + " AND idSeccion = " + idSeccion;
+            }
+            else if (idProceso != 0 && idEquipo != 0 && (idSeccion == 0 && idSubsistema != 0))
+            {
+                query += " WHERE idProceso = " + idProceso + " AND idEquipo = " + idEquipo + " AND idSubsistema = " + idSubsistema;
             }
             SqlDataAdapter adapter = new SqlDataAdapter(query, cnx);
             adapter.Fill(dataTable);
