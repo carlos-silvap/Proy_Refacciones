@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Windows.Forms;
 
 namespace Refacciones
@@ -72,6 +73,18 @@ namespace Refacciones
             Controls.Add(equiposControl);
             currentControl = equiposControl;
         }
-
+        public void Opciones(SqlConnection cnx, string proceso, string equipo, string seccion, int idProceso, int idEquipo, int idSeccion)
+        {
+            // Remove the current content from the panel
+            if (currentControl != null)
+            {
+                Controls.Remove(currentControl);
+                currentControl.Dispose();
+            }
+            var procesosControl = new Opciones(this, cnx, proceso, equipo, seccion, idProceso, idEquipo, idSeccion);
+            procesosControl.Dock = DockStyle.Fill;
+            Controls.Add(procesosControl);
+            currentControl = procesosControl;
+        }
     }
 }
