@@ -19,7 +19,7 @@ namespace Refacciones
             this.idProceso = idProceso;
             this.proceso = proceso;
         }
-
+        
         private void Equipos_Load(object sender, EventArgs e)
         {
             //Panels
@@ -27,31 +27,10 @@ namespace Refacciones
             var buttonsPanel = new Panel();
             var bottomPanel = new Panel();
 
-            //Buttons
-            var addButton = new Button();
-            
-            //Panel properties
-            topPanel.Dock = DockStyle.Top;
-            topPanel.Height = 30;
-
-            buttonsPanel.Dock = DockStyle.Fill;
-
-            bottomPanel.BackColor = Color.LightGray;
-            bottomPanel.Dock = DockStyle.Bottom;
-            bottomPanel.Height = 50;
-            
             //Add panels to form
             Controls.Add(topPanel);
             Controls.Add(buttonsPanel);
             Controls.Add(bottomPanel);
-            
-            //Buttons properties
-            addButton.Text = "Agregar Equipo";
-            addButton.Size = new Size(120, 30);
-            addButton.Anchor = AnchorStyles.None;
-            addButton.Location = new Point((bottomPanel.Width - addButton.Width) / 2,
-                                     (bottomPanel.Height - addButton.Height) / 2);
-            bottomPanel.Controls.Add(addButton);
 
             //Filter the elements in the sql table
             var command = new SqlCommand
@@ -61,34 +40,34 @@ namespace Refacciones
             };
             command.Parameters.AddWithValue("@idProceso", idProceso);
             var reader = command.ExecuteReader();
+            
+            //Top panel
             var label = DynamicPanelBuilder.GenerateTopPanel(topPanel, reader, mainForm, cnx, (equipo, idEquipo) =>
             {
                 mainForm.Procesos(cnx);
             });
-            var fpath = new Label();
-            string text = label.Text + " - " + proceso;
-            fpath.Text= text;
-            fpath.Font = label.Font;
-            fpath.TextAlign = label.TextAlign;
-            fpath.Dock = DockStyle.Top;
-
-            topPanel.Controls.Add(fpath);
+            //Buttons panel
             DynamicPanelBuilder.GenerateButtons(cnx, buttonsPanel, reader, (equipo, idEquipo) =>
             {
                 mainForm.SeccionesSubsistemas(cnx, proceso, equipo, idProceso, idEquipo);
             });
-            addButton.Click += (senders, ex) => agregarEquipo_Click(cnx, sender, e, label.Text, idProceso);
+            //Bottom panel
+            DynamicPanelBuilder.GenerateBottomPanel(bottomPanel, label.Text, (senders, ex) =>
+            {
+                UserEntryForm agregarForm = new UserEntryForm(cnx, label.Text, idProceso, 0, mainForm);
+                agregarForm.Show();
+            });
+
+            var fullPath = new Label
+            {
+                Text = " - " + proceso + " - ",
+                Font = new Font("Arial", 10, FontStyle.Bold),
+                TextAlign = label.TextAlign,
+                Dock = DockStyle.Top
+            };
+            topPanel.Controls.AddRange(new Control[] { fullPath, label });
             reader.Close();
-            //DynamicPanelBuilder.UpdatePanelSizeAndPosition(buttonsPanel, ClientSize);
-            //Resize += delegate
-            //{
-            //    DynamicPanelBuilder.UpdatePanelSizeAndPosition(buttonsPanel, ClientSize);
-            //};
         }
-        private void agregarEquipo_Click(SqlConnection cnx, object sender, EventArgs e, string label, int idProceso)
-        {
-            UserEntryForm agregarForm = new UserEntryForm(cnx, label, idProceso, 0, mainForm);
-            agregarForm.Show();
-        }
+
     }
 }
