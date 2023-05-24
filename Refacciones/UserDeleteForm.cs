@@ -86,34 +86,40 @@ namespace Refacciones
         {
             if (int.TryParse(idTextBox.Text, out int id))
             {
-                string query = $"SELECT * FROM {label} WHERE {idName} = {id}";
-                
-                using (SqlCommand cmd = new SqlCommand(query, cnx))
-                {
-                    SqlDataReader reader = cmd.ExecuteReader();
+                // Get the DataGridView instance from the rightPanel
+                var dataGridView = (DataGridView)rightPanel.Controls[0];
 
-                    if (reader.Read())
+                // Get the currently displayed DataTable from the DataGridView's DataSource
+                var dataTable = (DataTable)dataGridView.DataSource;
+
+                // Filter the DataTable to find the row with the specified ID
+                DataRow[] rows = dataTable.Select($"{idName} = {id}");
+
+                if (rows.Length > 0)
+                {
+                    // Get the first matching row
+                    DataRow row = rows[0];
+
+                    for (int i = 0; i < row.ItemArray.Length; i++)
                     {
-                        for (int i = 0; i < reader.FieldCount; i++)
+                        string columnName = dataTable.Columns[i].ColumnName;
+
+                        if (columnName.Contains("id"))
                         {
-                            string columnName = reader.GetName(i);
-                            if (columnName.Contains("id"))
-                            {
-                                continue;
-                            }
-                            TextBox textBox = (TextBox)leftPanel.Controls[columnName];
-                            if (textBox != null)
-                            {
-                                textBox.Text = reader[columnName].ToString();
-                            }
+                            continue;
+                        }
+
+                        TextBox textBox = (TextBox)leftPanel.Controls[columnName];
+
+                        if (textBox != null)
+                        {
+                            textBox.Text = row[i].ToString();
                         }
                     }
-                    else
-                    {
-                        MessageBox.Show("Element not found");
-                    }
-
-                    reader.Close();
+                }
+                else
+                {
+                    MessageBox.Show("Element not found");
                 }
             }
             else
@@ -121,6 +127,7 @@ namespace Refacciones
                 MessageBox.Show("Invalid ID");
             }
         }
+
         private void UserDeleteForm_Load(object sender, EventArgs e)
         {
             var splitContainer = new SplitContainer();
